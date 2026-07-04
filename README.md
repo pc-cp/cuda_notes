@@ -26,3 +26,25 @@ viewpoints from l get:
 4. SM have limit resource, so maxThreadsPerBlock,  maxThreadsPerSM, maxblocksPerSM, registersPerSM, and Shread Memory per SM/Block, we should be care when we run execute configure parameter.
 
 
+## chapter 5 - Memory architecture and data locality
+viewpoints from l get:
+
+1. this chapter origin from compute intensity -> roofline model -> how improve compute intensity for the same problem? because compute intensity = FLOPs / total bytes moved across the memory system ( both reads and writes ). can we can reuse data on on-chip memory to reduce Denominator. so Tiling technique that use SMEM to reduce access off-chip: GMEM.
+
+2. but SMEM is source in SM, so SMEM possible influence occupancy: if one block use more SMEM, blocks reside on SM will decrease.
+
+3. Tiling technique separate one operation to multiple phases, each phase, threads in block cooperate to load data that threads in block use. then this phase, all threads in block just use data that loaded (**Locality**). then wait threads in block read finish, move next phase to load GMEM until finish their job. so each thread load times decrease. but one operation been separate multiple phases.
+
+-----------
+
+some viewpoints to supplement:
+
+1. memory type: load/store registers produce less instructions, but for Cache or memory: SMEM, GMEM, need load/store operation. Since the processer can fetch and execute only a limited number of instructions per clock cycle.
+
+2. In modern computers the energy that is consumed for accessing a value from the register file is at least an order of magnitude lower than for accessing a value from the global memory.
+
+3. use register as soon as possible? exceeds the limit of the source lead occupancy decrease.
+
+4. Automatic array variables are not stored in registers. <-- some exceptions: The compiler may decide to store an automatic array into registers if all accesses are done with constant index values.
+
+ 

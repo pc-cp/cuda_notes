@@ -99,12 +99,8 @@ TEST(matrixmul, demo0) {
 	CUDA_CHECK(cudaMemcpy(A_d, A_h, size, cudaMemcpyHostToDevice));
 	CUDA_CHECK(cudaMemcpy(B_d, B_h, size, cudaMemcpyHostToDevice));
 	
-	// kernel invocation code 
-	cudaEvent_t start, stop;
-	cudaEventCreate(&start);
-	cudaEventCreate(&stop);
 	// warm-up run (first launch includes one-time overhead-discard it)
-#define VERSION 3
+#define VERSION 2
 #if VERSION == 1
 	dim3 grids(ceil(1.0 * Width / 16), ceil(1.0 * Width / 16), 1);
 	dim3 blocks(16, 16, 1);
@@ -121,7 +117,7 @@ TEST(matrixmul, demo0) {
 	CUDA_CHECK_KERNEL();
 
 	int iters = 10;
-	CUDA_CHECK(cudaEventRecord(start));
+	CudaTimer t;	// records start
 	for (int i = 0; i < iters; ++i) {
 #if VERSION == 1
 	matrixMulKernel<<<grids, blocks>>>(A_d, B_d, C_d, Width);
@@ -131,11 +127,7 @@ TEST(matrixmul, demo0) {
 	matrixMulKernel_v3<<<grids, blocks>>>(A_d, B_d, C_d, Width);
 #endif
 	}
-	CUDA_CHECK(cudaEventRecord(stop));
-	CUDA_CHECK(cudaEventSynchronize(stop));
-	
-	float ms = 0.0f;
-	CUDA_CHECK(cudaEventElapsedTime(&ms, start, stop));
+	float ms = t.elapsed_ms();
 #if VERSION == 1
 	printf("matmul_v1: %.3f ms/iters\n", ms/iters);
 	// matmul_v1: 1.042 ms/iters	
