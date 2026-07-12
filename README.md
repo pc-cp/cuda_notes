@@ -47,4 +47,36 @@ some viewpoints to supplement:
 
 4. Automatic array variables are not stored in registers. <-- some exceptions: The compiler may decide to store an automatic array into registers if all accesses are done with constant index values.
 
+## chapter 6 - Performance considerations
+viewpoints from l get:
+
+1. this is the last chapter of introduction, next chapter will use some patterns to practice these mindsets.
+
+2. optimization is not guess work, it based on your hardware and analyze program.
+
+3. until, we know some optimizes, from thread to block, and from on-chip memory to off-chip memory: 
+	- SIMD execute and avoid divergence
+	- occupancy to hide latency
+	- tiling technique to reuse data and improve compute intensity
+	- GMEM access coalescing to reduce access transaction, (corner turning to achieve memory coalescing).
+	- thread coarsening to reduce price of fake parallel.
+	- *privatization to less contention and serialzation of atomic updates.
+
+--------- 
+some viewpoints to supplement:
+1. DRAM bursting is a form of parallel organization: Multiple locations are accessed in the DRAM core array in parallel. However, bursting alone is not sufficient to realize the level of DRAM access bandwidth required by modern processes. it employ two more forms of parallel organization: banks and channels.
  
+2. In general, if the ratio of the cell array access latency and data transfer time is R, we need to have at least R + 1 banks if we hope to fully utilize the data transfer bandwidth of the channel bus. In general, the number of banks connected to each channel bus needs to be larger than R for two reasons. 
+	- having more banks reduces the probability of multiple simultaneous accesses targeting the same bank: bank conflict.
+	- the size of each cell array is set to achieve reasonable latency and manufacturability. This limits the number of cells that each bank can provide. One may need many banks just to be able to support the memory size that is required.
+
+3. The disadvantage of parallel work at the finest granularity comes when there is a "price" to be paid for parallel that work. such as redundant loading of data by different thread blocks, redundant work, sync overhead, and others. When the threads are executed in parallel by the HW, this price is often worth paying. If the HW ends up serializing the work as a result of insufficient resources, then this price has been paid unnecessary: assigning each thread multiple units of work, thread coarsening.
+
+| Optimization | Benefit to compute cores | Benefit to memory | Strategies |
+|---|---|---|---|
+| Maximizing occupancy | More work to hide pipeline latency | More parallel memory accesses to hide DRAM latency | Tuning usage of SM resources such as threads per block, SMEM per block, and so on |
+| Enabling coalesced GMEM access | Fewer pipeline stalls waiting for GMEM access | Less GMEM traffic and better utilization of bursts/cache lines | Transfer between GMEM and SMEM in a coalesced manner and perform uncoalesced accesses in SMEM (e.g., corner turning); rearranging the mapping of threads to data; rearranging the layout of the data |
+| Minimizing control divergence | High SIMD efficiency | - | Rearranging the mapping of threads to data; rearranging the layout of the data |
+| Tiling of reused data | Fewer pipeline stalls waiting for GMEM | Less GMEM traffic | Placing data that is reused within a block in SMEM or registers so that it is transferred between GMEM and the SM only once |
+| Privatization (covered later) | Fewer pipeline stalls waiting for atomic updates | Less contention and serialization of atomic updates | Applying partial updates to a private copy of the data and then updating the universal copy when done |
+| Thread coarsening | Less redundant work, divergence, or synchronization | Less redundant GMEM traffic | Assigning multiple units of parallelism to each thread to reduce the price of parallelism when it is incurred unnecessarily |
